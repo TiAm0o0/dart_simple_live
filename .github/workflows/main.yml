@@ -16,8 +16,12 @@ jobs:
         with:
           channel: stable
 
+      - name: Check project files
+        run: ls -R
+
       - name: Install dependencies
         run: flutter pub get
+        working-directory: .
 
       - name: Generate iOS project
         run: |
@@ -25,9 +29,11 @@ jobs:
           cd ios
           pod install
           cd ..
+        working-directory: .
 
       - name: Build iOS (no codesign)
         run: flutter build ios --no-codesign
+        working-directory: .
 
       - name: Export IPA
         run: |
