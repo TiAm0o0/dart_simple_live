@@ -8,27 +8,18 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      # 1️⃣ 拉取仓库代码
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ 安装 Flutter
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      # 3️⃣ 查看项目文件（调试用）
-      - name: Check project files
-        run: ls -R
-        working-directory: simple_live_app
-
-      # 4️⃣ 安装依赖
       - name: Install dependencies
         run: flutter pub get
         working-directory: simple_live_app
 
-      # 5️⃣ 生成 iOS 工程
       - name: Generate iOS project
         run: |
           flutter create .
@@ -37,14 +28,19 @@ jobs:
           cd ..
         working-directory: simple_live_app
 
-      # 6️⃣ 构建 IPA（不签名）
-      - name: Build iOS IPA
-        run: flutter build ipa --no-codesign
+      - name: Build iOS (no codesign)
+        run: flutter build ios --no-codesign
         working-directory: simple_live_app
 
-      # 7️⃣ 上传 IPA 作为 artifact
+      - name: Export IPA
+        run: |
+          cd simple_live_app/build/ios/iphoneos
+          mkdir -p Payload
+          mv Runner.app Payload/
+          zip -r dart_simple_live.ipa Payload
+
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: dart_simple_live_ipa
-          path: simple_live_app/build/ios/ipa/Runner.ipa
+          path: simple_live_app/build/ios/iphoneos/dart_simple_live.ipa
