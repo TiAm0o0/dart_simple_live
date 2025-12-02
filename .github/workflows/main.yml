@@ -21,7 +21,7 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-        working-directory: .
+        working-directory: simple_live_app
 
       - name: Generate iOS project
         run: |
@@ -29,11 +29,11 @@ jobs:
           cd ios
           pod install
           cd ..
-        working-directory: .
+        working-directory: simple_live_app
 
       - name: Build iOS (no codesign)
         run: flutter build ios --no-codesign
-        working-directory: .
+        working-directory: simple_live_app
 
       - name: Export IPA
         run: |
@@ -41,6 +41,7 @@ jobs:
           mkdir Payload
           mv Runner.app Payload/
           zip -r dart_simple_live.ipa Payload
+        working-directory: simple_live_app
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
