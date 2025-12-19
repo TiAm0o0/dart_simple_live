@@ -1,71 +1,55 @@
-name: Auto Build iOS IPA (TrollStore)
+name: Build iOS IPA (Auto Upstream)
 
-# 定时触发 + 手动触发
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '0 12 * * *' # 每天 UTC 12:00 自动运行一次
-  workflow_dispatch:   # 支持手动触发
+    - cron: '0 3 * * *' # 每天自动检查一次（可删）
 
 jobs:
   build:
     runs-on: macos-latest
 
     steps:
-      # 1️⃣ Checkout 仓库
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 必须，否则 rebase 会失败
 
-      # 2️⃣ 设置 GitHub 用户信息（方便合并上游）
-      - name: Setup Git user
+      - name: Add upstream if not exists
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git remote add upstream https://github.com/xiaoyaocz/dart_simple_live.git || true
+          git remote -v
 
-      # 3️⃣ 添加上游仓库
-      - name: Add upstream remote
-        run: |
-          git remote add upstream https://github.com/xiaoyaocz/dart_simple_live.git || echo "Upstream exists"
-          git fetch upstream
-          git checkout main
-          git merge upstream/main || echo "No updates to merge"
-          git push origin main || echo "Nothing to push"
+      - name: Fetch upstream
+        run: git fetch upstream
 
-      # 4️⃣ 安装 Flutter
+      - name: Rebase upstream master
+        run: git rebase upstream/master
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      # 5️⃣ 安装依赖
       - name: Install dependencies
-        run: flutter pub get
-        working-directory: simple_live_app
-
-      # 6️⃣ 生成 iOS 工程
-      - name: Generate iOS project
         run: |
-          flutter create .
-          cd ios
-          pod install
-          cd ..
-        working-directory: simple_live_app
+          cd simple_live_app
+          flutter pub get
 
-      # 7️⃣ 构建 iOS (no codesign)
-      - name: Build iOS
-        run: flutter build ios --no-codesign
-        working-directory: simple_live_app
+      - name: Build iOS (no codesign)
+        run: |
+          cd simple_live_app
+          flutter build ios --release --no-codesign
 
-      # 8️⃣ 打包 IPA
-      - name: Export IPA
+      - name: Export IPA (TrollStore)
         run: |
           cd simple_live_app/build/ios/iphoneos
-          mkdir -p Payload
+          mkdir Payload
           mv Runner.app Payload/
-          zip -r dart_simple_live.ipa Payload
+          zip -r SimpleLive.ipa Payload
 
-      # 9️⃣ 上传 artifact
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: dart_simple_live_ipa
-          path: simple_live_app/build/ios/iphoneos/dart_simple_live.ipa
+          name: SimpleLive-IPA
+          path: simple_live_app/build/ios/iphoneos/SimpleLive.ipa
