@@ -1,21 +1,21 @@
-name: Build iOS IPA (Auto Upstream)
+name: Auto Sync & Build iOS IPA
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *' # 每天自动检查一次（可删）
+    - cron: '0 3 * * *'   # 每天自动同步一次（可选）
 
 jobs:
   build:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout fork
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # 必须，否则 rebase 会失败
+          fetch-depth: 0   # ⚠️ 必须，否则 rebase 会失败
 
-      - name: Add upstream if not exists
+      - name: Add upstream (if not exists)
         run: |
           git remote add upstream https://github.com/xiaoyaocz/dart_simple_live.git || true
           git remote -v
@@ -25,6 +25,15 @@ jobs:
 
       - name: Rebase upstream master
         run: git rebase upstream/master
+
+      # 🔴 关键一步：把 rebase 后的结果推回你自己的 fork
+      - name: Push changes to fork
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin master --force-with-lease
+
+      # ↓↓↓ 下面是你已经跑通的 Flutter 编译流程 ↓↓↓
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
